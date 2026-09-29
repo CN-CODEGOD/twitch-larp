@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Twitch Live</title>
+    <style>
+      :root {
+        --bg: #0e0e10;
+        --panel: #18181b;
+        --panel-2: #1f1f23;
+        --panel-3: #232327;
+        --line: rgba(255, 255, 255, 0.08);
+        --soft: rgba(255, 255, 255, 0.66);
+        --muted: rgba(255, 255, 255, 0.45);
+        --text: #efeff1;
+        --accent: #9147ff;
+        --accent-2: #772ce8;
+        --green: #00e59b;
+        --danger: #f43f5e;
+        --shadow: 0 18px 38px rgba(0, 0, 0, 0.3);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, "Segoe UI", sans-serif;
+      }
+
+      body {
+        background:
+          radial-gradient(circle at top left, rgba(145, 71, 255, 0.22), transparent 28%),
+          linear-gradient(180deg, #0f0f12 0%, #0d0d10 100%);
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .page-shell {
+        min-height: 100vh;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        height: 60px;
+        padding: 0 18px;
+        background: rgba(18, 18, 20, 0.94);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 170px;
+      }
+
+      .logo-mark {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, var(--accent), #b37aff);
+        position: relative;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+      }
+
+      .logo-mark::before {
+        content: "";
+        position: absolute;
+        inset: 8px 9px 8px 10px;
+        border-radius: 4px 6px 6px 4px;
+        background: rgba(255,255,255,0.92);
+        transform: skewX(-12deg);
+      }
+
+      .brand-name {
+        font-weight: 800;
+        letter-spacing: 0.02em;
+      }
+
+      .primary-nav {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        color: var(--soft);
+        font-size: 0.94rem;
+      }
+
+      .primary-nav a:hover,
+      .sidebar-section a:hover,
+      .chip:hover {
+        color: var(--text);
+      }
+
+      .search-wrap {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+      }
+
+      .search {
+        width: min(580px, 100%);
+        position: relative;
+      }
+
+      .search input {
+        width: 100%;
+        height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255,255,255,0.05);
+        color: var(--text);
+        padding: 0 42px 0 16px;
+        outline: none;
+      }
+
+      .search input::placeholder {
+        color: var(--muted);
+      }
+
+      .search-icon {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255,255,255,0.75);
+        border-radius: 50%;
+        transform: translateY(-50%);
+      }
+
+      .search-icon::after {
+        content: "";
+        position: absolute;
+        width: 7px;
+        height: 2px;
+        background: rgba(255,255,255,0.75);
+        right: -5px;
+        bottom: -2px;
+        border-radius: 2px;
+        transform: rotate(45deg);
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .ghost-btn,
+      .primary-btn {
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.02);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 9px 16px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .primary-btn {
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        border: none;
+        box-shadow: 0 10px 24px rgba(145, 71, 255, 0.45);
+      }
+
+      .layout {
+        display: flex;
+        min-height: calc(100vh - 60px);
+      }
+
+      .sidebar {
+        width: 272px;
+        border-right: 1px solid var(--line);
+        background: rgba(17, 17, 19, 0.9);
+        padding: 18px 12px 28px;
+      }
+
+      .sidebar-section {
+        margin-bottom: 18px;
+      }
+
+      .sidebar-title {
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.72rem;
+        padding: 0 10px 10px;
+      }
+
+      .sidebar-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 10px;
+        border-radius: 10px;
+        color: var(--soft);
+        transition: background 0.2s ease;
+      }
+
+      .sidebar-item:hover {
+        background: rgba(255,255,255,0.04);
+      }
+
+      .avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6d28d9, #a78bfa);
+        display: grid;
+        place-items: center;
+        font-size: 0.7rem;
+        font-weight: 800;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--danger);
+        margin-left: auto;
+        box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.16);
+      }
+
+      .content {
+        flex: 1;
+        padding: 22px 24px 40px;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 22px;
+        padding: 18px 0 28px;
+      }
+
+      .hero-banner {
+        min-height: 210px;
+        border-radius: 22px;
+        padding: 20px 22px;
+        background:
+          linear-gradient(135deg, rgba(88, 39, 148, 0.84), rgba(28, 20, 58, 0.6)),
+          url('https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        justify-content: end;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        padding: 7px 11px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.16);
+        font-size: 0.76rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .hero-copy {
+        font-size: clamp(2rem, 3vw, 3.1rem);
+        line-height: 1.05;
+        margin: 14px 0 12px;
+        font-weight: 800;
+      }
+
+      .hero-meta {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: rgba(255,255,255,0.82);
+        font-size: 0.9rem;
+      }
+
+      .mini-panel {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 18px;
+      }
+
+      .mini-panel h3 {
+        margin: 0 0 12px;
+        font-size: 1.05rem;
+      }
+
+      .mini-metrics {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      .metric {
+        flex: 1 1 100px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(255,255,255,0.02);
+      }
+
+      .metric strong {
+        display: block;
+        font-size: 1.25rem;
+        margin-top: 4px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 16px 0 14px;
+      }
+
+      .section-head h2 {
+        margin: 0;
+        font-size: clamp(1.3rem, 2vw, 1.7rem);
+      }
+
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .chip {
+        padding: 8px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.02);
+        color: var(--soft);
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .chip.active {
+        background: rgba(145, 71, 255, 0.18);
+        border-color: rgba(145, 71, 255, 0.5);
+        color: var(--text);
+      }
+
+      .live-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 18px;
+      }
+
+      .stream-card {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        overflow: hidden;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+      }
+
+      .stream-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(145, 71, 255, 0.5);
+      }
+
+      .thumbnail {
+        position: relative;
+        aspect-ratio: 16 / 9;
+        background-size: cover;
+        background-position: center;
+      }
+
+      .live-pill {
+        position: absolute;
+        left: 12px;
+        top: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: rgba(244, 63, 94, 0.92);
+        color: white;
+        font-weight: 700;
+        font-size: 0.72rem;
+        padding: 5px 9px;
+        border-radius: 6px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .live-pill::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: white;
+      }
+
+      .viewer-badge {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        background: rgba(10, 10, 13, 0.72);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 999px;
+        padding: 5px 8px;
+        font-size: 0.72rem;
+        color: rgba(255,255,255,0.9);
+        font-weight: 700;
+      }
+
+      .card-body {
+        padding: 12px 12px 14px;
+      }
+
+      .stream-row {
+        display: flex;
+        gap: 10px;
+      }
+
+      .channel-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+        display: grid;
+        place-items: center;
+        font-size: 0.82rem;
+        font-weight: 800;
+        flex-shrink: 0;
+      }
+
+      .stream-info {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .stream-title {
+        margin: 0 0 6px;
+        font-weight: 700;
+        line-height: 1.35;
+        color: var(--text);
+        font-size: 1rem;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+
+      .stream-channel,
+      .stream-subtitle {
+        color: var(--soft);
+        font-size: 0.9rem;
+      }
+
+      .stream-subtitle {
+        margin-top: 4px;
+      }
+
+      @media (max-width: 980px) {
+        .sidebar {
+          display: none;
+        }
+
+        .hero {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .topbar {
+          gap: 8px;
+          padding-inline: 10px;
+        }
+
+        .primary-nav {
+          display: none;
+        }
+
+        .header-actions .ghost-btn {
+          display: none;
+        }
+
+        .content {
+          padding-inline: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo-mark"></div>
+          <div class="brand-name">Twitch</div>
+        </div>
+
+        <nav class="primary-nav" aria-label="Primary navigation">
+          <a href="#">Following</a>
+          <a href="#">Browse</a>
+          <a href="#">Esports</a>
+        </nav>
+
+        <div class="search-wrap">
+          <div class="search">
+            <input type="text" placeholder="Search" aria-label="Search streams" />
+            <span class="search-icon" aria-hidden="true"></span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button class="ghost-btn">Log in</button>
+          <button class="primary-btn">Sign up</button>
+        </div>
+      </header>
+
+      <div class="layout">
+        <aside class="sidebar">
+          <div class="sidebar-section">
+            <div class="sidebar-title">For You</div>
+            <div class="sidebar-list">
+              <a href="#" class="sidebar-item"><span class="avatar">C</span> caseoh_<span class="status-dot"></span></a>
+              <a href="#" class="sidebar-item"><span class="avatar">X</span> xQc<span class="status-dot"></span></a>
+              <a href="#" class="sidebar-item"><span class="avatar">T</span> TheBurntPeanut<span class="status-dot"></span></a>
+              <a href="#" class="sidebar-item"><span class="avatar">I</span> ironmouse<span class="status-dot"></span></a>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <div class="sidebar-title">Recommended</div>
+            <div class="sidebar-list">
+              <a href="#" class="sidebar-item"><span class="avatar">V</span> Valheim</a>
+              <a href="#" class="sidebar-item"><span class="avatar">G</span> GTA V</a>
+              <a href="#" class="sidebar-item"><span class="avatar">F</span> Fortnite</a>
+              <a href="#" class="sidebar-item"><span class="avatar">W</span> WoW</a>
+            </div>
+          </div>
+        </aside>
+
+        <main class="content">
+          <section class="hero">
+            <div class="hero-banner">
+              <div class="badge">Featured</div>
+              <div class="hero-copy">Live now. Massive energy.</div>
+              <div class="hero-meta">
+                <span>caseoh_</span>
+                <span>•</span>
+                <span>56.5K viewers</span>
+              </div>
+            </div>
+
+            <div class="mini-panel">
+              <h3>Live stats</h3>
+              <div class="mini-metrics">
+                <div class="metric">
+                  <span>Streams</span>
+                  <strong>49</strong>
+                </div>
+                <div class="metric">
+                  <span>Viewers</span>
+                  <strong>192K</strong>
+                </div>
+                <div class="metric">
+                  <span>Categories</span>
+                  <strong>24</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="section-head">
+            <h2>Recommended for you</h2>
+          </div>
+
+          <div class="chip-row" aria-label="Channels categories">
+            <div class="chip active">Recommended</div>
+            <div class="chip">Games</div>
+            <div class="chip">IRL</div>
+            <div class="chip">Music</div>
+            <div class="chip">Creative</div>
+          </div>
+
+          <section class="live-grid" id="liveGrid" aria-live="polite"></section>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      const streams = [
+        {
+          title: '🟨SPOOKY TIME🟨',
+          channel: 'caseoh_',
+          game: 'Games + Demos',
+          viewers: 56585,
+          thumb: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_caseoh_-{width}x{height}.jpg'
+        },
+        {
+          title: 'VALHEIM | w/ HutchMF | 2/8 BOSSES DEFEATED | FRICK A FAN FRIDAY',
+          channel: 'TheBurntPeanut',
+          game: 'Valheim',
+          viewers: 31053,
+          thumb: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_theburntpeanut-{width}x{height}.jpg'
+        },
+        {
+          title: '🎲LIVE🎲CLICK🎲HERE🎲LOCK IN🎲DRAMA🎲NEWS🎲RP AT 5:15 PM EST🎲',
+          channel: 'xQc',
+          game: 'Grand Theft Auto V',
+          viewers: 28430,
+          thumb: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_xqc-{width}x{height}.jpg'
+        },
+        {
+          title: 'ケツバトラーからのマリメ 夕方までい',
+          channel: 'バトラ',
+          game: 'Super Mario Maker 2',
+          viewers: 12201,
+          thumb: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_batora324-{width}x{height}.jpg'
+        },
+        {
+          title: 'PLAQUEBOYMAX X NATALIE NUNN & THE BADDIES',
+          channel: 'PlaqueBoyMax',
+          game: 'IRL',
+          viewers: 12007,
+          thumb: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_plaqueboymax-{width}x{height}.jpg'
+        },
+        {
+          title: '[hardcore] death = delete world + map + default hardcore settings XD',
+          channel: 'MOONMOON',
+          game: 'Valheim',
+          viewers: 11565,
+          thumb: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_moonmoon-{width}x{height}.jpg'
+        },
+        {
+          title: '🔴DROPS🔴!MOUSEATHON DAY 25! 50% TO IMMUNE DEFICIENCY FOUNDATION!',
+          channel: 'ironmouse',
+          game: 'Fortnite',
+          viewers: 10947,
+          thumb: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_ironmouse-{width}x{height}.jpg'
+        },
+        {
+          title: 'Wochenendstart nur mit #FREiAB18! ⭐ !1004 !spotify !vod !pc !holy !hyperx',
+          channel: 'GRONKH',
+          game: 'Graveyard Keeper II',
+          viewers: 10480,
+          thumb: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_gronkh-{width}x{height}.jpg'
+        },
+        {
+          title: 'wow chillin - !starforge @StarforgeSystems',
+          channel: 'summit1g',
+          game: 'World of Warcraft',
+          viewers: 10330,
+          thumb: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_summit1g-{width}x{height}.jpg'
+        },
+        {
+          title: '!DROPS WOW FOREVER BETA WOW IS BACK!! YESSSSSSS! BEST DAY OF THE WEEK!',
+          channel: 'Pikabooirl',
+          game: 'World of Warcraft',
+          viewers: 8912,
+          thumb: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_pikabooirl-{width}x{height}.jpg'
+        }
+      ];
+
+      const formatViewers = (value) => {
+        if (value >= 1000) {
+          return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K`;
+        }
+        return String(value);
+      };
+
+      const createInitials = (name) => name.split(/[^A-Za-z0-9]/).filter(Boolean).slice(0, 2).map(part => part[0].toUpperCase()).join('') || 'TW';
+
+      const grid = document.getElementById('liveGrid');
+
+      streams.forEach((stream) => {
+        const card = document.createElement('article');
+        card.className = 'stream-card';
+
+        const thumbUrl = stream.thumb.replace('{width}', '320').replace('{height}', '180');
+        const initials = createInitials(stream.channel);
+
+        card.innerHTML = `
+          <div class="thumbnail" style="background-image: url('${thumbUrl}')">
+            <span class="live-pill">Live</span>
+            <span class="viewer-badge">${formatViewers(stream.viewers)} viewers</span>
+          </div>
+          <div class="card-body">
+            <div class="stream-row">
+              <div class="channel-avatar" aria-hidden="true">${initials}</div>
+              <div class="stream-info">
+                <h3 class="stream-title">${stream.title}</h3>
+                <div class="stream-channel">${stream.channel}</div>
+                <div class="stream-subtitle">${stream.game}</div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+    </script>
+  </body>
+</html>
